@@ -1,0 +1,226 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ----------------------------------------------------------------------------
+// Enums
+// ----------------------------------------------------------------------------
+
+enum UserRole {
+  SUPER_ADMIN
+  CAFETERIA_ADMIN
+  EMPLOYEE
+}
+
+// Order lifecycle.
+//  PENDING   -> placed by employee, no money moved yet.
+//  APPROVED  -> cafeteria admin set the final (possibly adjusted) total and the
+//               employee's credit was deducted; an invoice exists.
+//  REJECTED  -> admin declined the order; no money moved.
+//  CANCELLED -> withdrawn before approval (by employee or admin); no money moved.
+enum OrderStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+// Direction of a credit-ledger entry, so a balance is always the sum of entries.
+enum LedgerType {
+  TOPUP        // admin added credit (employee paid cash at the cafeteria)
+  ORDER_CHARGE // an approved order deducted credit
+  ADJUSTMENT   // manual correction by an admin
+  REFUND       // credit returned (e.g. an approved order later voided)
+}
+
+// ----------------------------------------------------------------------------
+// Users
+// ----------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole @default(EMPLOYEE)
+  isActive     Boolean  @default(true)
+
+  // Employee contact / delivery info. Optional for admins.
+  phone        String?
+  officeNumber String?
+  floorNumber  String?
+
+  // Cached balance in fils (1 KWD = 1000 fils) to avoid floating point.
+  // Authoritative value is always the sum of ledgerEntries; this is a fast cache
+  // kept in sync inside the same transaction that writes a ledger entry.
+  balanceFils  Int      @default(0)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orders          Order[]        @relation("OrderCustomer")
+  ledgerEntries   LedgerEntry[]  @relation("LedgerOwner")
+  topUpsReceived  LedgerEntry[]  @relation("LedgerCreatedBy")
+  ordersHandled   Order[]        @relation("OrderHandledBy")
+  auditLogs       AuditLog[]
+}
+
+// ----------------------------------------------------------------------------
+// Menu
+// ----------------------------------------------------------------------------
+
+model MenuCategory {
+  id           String     @id @default(cuid())
+  name         String
+  displayOrder Int        @default(0)
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  items        MenuItem[]
+}
+
+model MenuItem {
+  id           String       @id @default(cuid())
+  categoryId   String
+  name         String
+  description  String?
+  // Base list price in fils. Final charged price may be adjusted at approval.
+  priceFils    Int
+  imageUrl     String?      // data URL or hosted image
+  isAvailable  Boolean      @default(true)
+  displayOrder Int          @default(0)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  category     MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  orderItems   OrderItem[]
+}
+
+// ----------------------------------------------------------------------------
+// Orders
+// ----------------------------------------------------------------------------
+
+model Order {
+  id           String       @id @default(cuid())
+  // Short human-friendly number, e.g. "CAF-1042", assigned at creation.
+  orderNumber  String       @unique
+  customerId   String
+  status       OrderStatus  @default(PENDING)
+
+  // Delivery snapshot (copied from the user at order time so later profile edits
+  // don't rewrite history).
+  deliveryOffice String?
+  deliveryFloor  String?
+  customerNote   String?
+
+  // Totals in fils. requestedTotal = sum of base prices at order time.
+  // finalTotal is set by the admin at approval (may differ due to toppings etc.)
+  requestedTotalFils Int     @default(0)
+  finalTotalFils     Int?
+  adminNote          String?
+
+  handledById  String?
+  approvedAt   DateTime?
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  customer     User         @relation("OrderCustomer", fields: [customerId], references: [id], onDelete: Cascade)
+  handledBy    User?        @relation("OrderHandledBy", fields: [handledById], references: [id], onDelete: SetNull)
+  items        OrderItem[]
+  invoice      Invoice?
+  ledgerEntry  LedgerEntry?
+}
+
+model OrderItem {
+  id            String   @id @default(cuid())
+  orderId       String
+  menuItemId    String?  // null if the item was later deleted from the menu
+  // Snapshot fields so the order/invoice is stable even if the menu changes.
+  nameSnapshot  String
+  unitPriceFils Int
+  quantity      Int      @default(1)
+  // Per-line final price set by admin (defaults to unitPrice * quantity).
+  lineTotalFils Int
+  note          String?
+
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem      MenuItem? @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
+}
+
+// ----------------------------------------------------------------------------
+// Credit ledger + documents
+// ----------------------------------------------------------------------------
+
+model LedgerEntry {
+  id           String     @id @default(cuid())
+  ownerId      String     // the employee whose balance is affected
+  type         LedgerType
+  // Signed amount in fils. Positive = credit added, negative = credit removed.
+  amountFils   Int
+  balanceAfter Int        // running balance snapshot after this entry
+  note         String?
+
+  // Link to the order if this entry is an ORDER_CHARGE/REFUND.
+  orderId      String?    @unique
+  // Who recorded it (the admin for top-ups/adjustments).
+  createdById  String?
+
+  createdAt    DateTime   @default(now())
+
+  owner        User       @relation("LedgerOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  createdBy    User?      @relation("LedgerCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  order        Order?     @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  receipt      Receipt?
+}
+
+// A printable top-up receipt. One per TOPUP ledger entry.
+model Receipt {
+  id             String      @id @default(cuid())
+  receiptNumber  String      @unique  // e.g. "RCP-2051"
+  ledgerEntryId  String      @unique
+  createdAt      DateTime    @default(now())
+  ledgerEntry    LedgerEntry @relation(fields: [ledgerEntryId], references: [id], onDelete: Cascade)
+}
+
+// A printable order invoice. One per APPROVED order.
+model Invoice {
+  id             String   @id @default(cuid())
+  invoiceNumber  String   @unique  // e.g. "INV-3090"
+  orderId        String   @unique
+  totalFils      Int
+  createdAt      DateTime @default(now())
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+// ----------------------------------------------------------------------------
+// App-wide settings (single row) + audit log
+// ----------------------------------------------------------------------------
+
+model AppSetting {
+  id                 String   @id @default("singleton")
+  // Most negative balance an employee may reach, stored as a positive fils value.
+  // e.g. 5000 means balance may go as low as -5.000 KWD.
+  negativeLimitFils  Int      @default(5000)
+  allowedEmailDomains String  @default("kufpec.com")
+  cafeteriaName      String   @default("KUFPEC Cafeteria")
+  updatedAt          DateTime @updatedAt
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String
+  action      String
+  entityType  String
+  entityId    String
+  entityName  String?
+  details     String?
+  createdAt   DateTime @default(now())
+  actor       User     @relation(fields: [actorUserId], references: [id], onDelete: Cascade)
+}
