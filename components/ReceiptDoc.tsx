@@ -25,8 +25,10 @@ export function ReceiptDoc({
   return (
     <div className="doc">
       <div className="doc-head">
-        <div className="brand-mark" style={{ justifyContent: 'center', color: 'var(--brand)' }}>
-          <span className="brand-dot" /> {cafeteriaName}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/kufpec-logo.png" alt="KUFPEC" style={{ height: 40, width: 'auto' }} />
+          <strong style={{ color: 'var(--brand)', fontSize: '1rem' }}>{cafeteriaName}</strong>
         </div>
         <h2 style={{ marginTop: 8 }}>Top-up receipt</h2>
         <p className="small muted">{receiptNumber}</p>

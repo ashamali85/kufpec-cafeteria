@@ -11,8 +11,10 @@ export default function SignupPage() {
   return (
     <main className="container-narrow" style={{ paddingTop: 48, paddingBottom: 48 }}>
       <div className="center" style={{ marginBottom: 24 }}>
-        <Link href="/" className="brand-mark" style={{ justifyContent: 'center', color: 'var(--brand)' }}>
-          <span className="brand-dot" /> KUFPEC Cafeteria
+        <Link href="/" className="brand-mark-light">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/kufpec-logo.png" alt="KUFPEC" style={{ height: 44, width: 'auto' }} />
+          <span style={{ fontWeight: 700, color: 'var(--ink)', fontSize: '1.05rem' }}>Cafeteria</span>
         </Link>
       </div>
       <div className="card card-pad-lg">

@@ -9,8 +9,10 @@ export function TopBar({ user }: { user: SessionUser | null }) {
     <header className="topbar print-hide">
       <div className="container">
         <Link href={user ? '/menu' : '/'} className="brand-mark">
-          <span className="brand-dot" />
-          KUFPEC Cafeteria
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/kufpec-logo.png" alt="KUFPEC" className="brand-logo-img" />
+          <span className="brand-divider" />
+          <span className="brand-sub">Cafeteria</span>
         </Link>
         <nav className="nav">
           {!user && (

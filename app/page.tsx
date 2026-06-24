@@ -17,22 +17,28 @@ export default async function HomePage() {
     <>
       <TopBar user={user} />
       <main className="container" style={{ paddingBottom: 48, paddingTop: 24 }}>
-        <section className="hero">
-          <div className="accent-rule" />
-          <h1>Good food, delivered to your desk.</h1>
-          <p>
-            Browse today’s cafeteria menu, order straight to your office and floor, and pay from
-            your cafeteria credit. No cash, no queue.
-          </p>
-          <div className="row mt-6">
-            {user ? (
-              <Link href="/menu" className="btn btn-accent">Browse the menu</Link>
-            ) : (
-              <>
-                <Link href="/signup" className="btn btn-accent">Create your account</Link>
-                <Link href="/login" className="btn btn-ghost">Sign in</Link>
-              </>
-            )}
+        <section className="hero hero-split">
+          <div className="hero-copy">
+            <span className="hero-pill">KUFPEC Cafeteria</span>
+            <h1>Good food, delivered to your desk.</h1>
+            <p>
+              Browse today’s cafeteria menu, order straight to your office and floor, and pay from
+              your cafeteria credit. No cash, no queue.
+            </p>
+            <div className="row mt-6 wrap">
+              {user ? (
+                <Link href="/menu" className="btn btn-ghost btn-on-dark">Browse the menu</Link>
+              ) : (
+                <>
+                  <Link href="/signup" className="btn btn-ghost btn-on-dark">Create your account</Link>
+                  <Link href="/login" className="btn btn-outline-light">Sign in</Link>
+                </>
+              )}
+            </div>
+          </div>
+          <div className="hero-art">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/cafeteria-hero.svg" alt="Illustration of cafeteria coffee, a sandwich and fresh juice" />
           </div>
         </section>
 
