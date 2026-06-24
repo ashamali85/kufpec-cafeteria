@@ -30,12 +30,12 @@ export default async function WalletPage() {
       <main className="container" style={{ paddingTop: 24, paddingBottom: 48 }}>
         <h1>Wallet</h1>
 
-        <div className="card mt-4" style={{ background: 'var(--brand)', color: '#fff', border: 'none' }}>
-          <span className="small" style={{ color: '#cfe3d8' }}>Current credit balance</span>
+        <div className="card mt-4" style={{ background: 'linear-gradient(135deg, #0a3d91, #1b67d5)', color: '#fff', border: 'none' }}>
+          <span className="small" style={{ color: 'rgba(255,255,255,0.8)' }}>Current credit balance</span>
           <div style={{ fontFamily: 'var(--font-display)', fontSize: '2.6rem' }}>
             {formatKwd(user.balanceFils)}
           </div>
-          <p className="small" style={{ color: '#cfe3d8' }}>
+          <p className="small" style={{ color: 'rgba(255,255,255,0.8)' }}>
             Top up with cash at the cafeteria counter — they’ll add the credit and print you a receipt.
           </p>
         </div>
