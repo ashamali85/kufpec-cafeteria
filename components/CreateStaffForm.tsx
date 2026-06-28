@@ -3,6 +3,7 @@
 import { useActionState, useState } from 'react';
 import { createStaffAction } from '@/lib/actions';
 import { SubmitButton } from '@/components/SubmitButton';
+import { ProcessingOverlay } from '@/components/ProcessingOverlay';
 
 export function CreateStaffForm() {
   const [state, formAction] = useActionState(createStaffAction, null);
@@ -15,6 +16,7 @@ export function CreateStaffForm() {
       <h3 style={{ marginBottom: 10 }}>New staff account</h3>
       {state?.error && <div className="alert alert-error">{state.error}</div>}
       <form action={formAction}>
+          <ProcessingOverlay label="Creating account…" />
         <div className="grid-2">
           <div className="field">
             <label htmlFor="name">Name</label>

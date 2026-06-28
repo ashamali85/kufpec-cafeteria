@@ -4,6 +4,7 @@ import { useActionState, useMemo, useState } from 'react';
 import { approveOrderAction, rejectOrderAction } from '@/lib/actions';
 import { formatKwd, parseKwdToFils } from '@/lib/money';
 import { SubmitButton } from '@/components/SubmitButton';
+import { ProcessingOverlay } from '@/components/ProcessingOverlay';
 
 type Line = { id: string; nameSnapshot: string; quantity: number; lineTotalFils: number; note: string | null };
 
@@ -49,6 +50,7 @@ export function ProcessOrderForm({
         {approveState?.error && <div className="alert alert-error">{approveState.error}</div>}
 
         <form action={approveAction}>
+          <ProcessingOverlay label="Approving order…" />
           <input type="hidden" name="orderId" value={orderId} />
           <table>
             <thead><tr><th>Item</th><th>Qty</th><th style={{ width: 140 }}>Line total (KWD)</th></tr></thead>
@@ -107,6 +109,7 @@ export function ProcessOrderForm({
         <h3 style={{ marginBottom: 8 }}>Reject this order</h3>
         {rejectState?.error && <div className="alert alert-error">{rejectState.error}</div>}
         <form action={rejectAction}>
+          <ProcessingOverlay label="Rejecting order…" />
           <input type="hidden" name="orderId" value={orderId} />
           <div className="field">
             <label htmlFor="rejectNote">Reason (optional)</label>

@@ -4,6 +4,7 @@ import { useActionState, useMemo, useState } from 'react';
 import { placeOrderAction } from '@/lib/actions';
 import { formatKwd } from '@/lib/money';
 import { SubmitButton } from '@/components/SubmitButton';
+import { ProcessingOverlay } from '@/components/ProcessingOverlay';
 
 type Item = {
   id: string;
@@ -30,6 +31,10 @@ export function MenuBrowser({
 }) {
   const [cart, setCart] = useState<Record<string, CartLine>>({});
   const [activeCat, setActiveCat] = useState<string>('All');
+  const [reviewing, setReviewing] = useState(false);
+  const [office, setOffice] = useState(defaultOffice);
+  const [floor, setFloor] = useState(defaultFloor);
+  const [customerNote, setCustomerNote] = useState('');
   const [state, formAction] = useActionState(placeOrderAction, null);
 
   const visible = useMemo(
@@ -127,7 +132,8 @@ export function MenuBrowser({
 
         {lines.length === 0 ? (
           <p className="muted small">Add items from the menu and they’ll show up here.</p>
-        ) : (
+        ) : !reviewing ? (
+          /* ---------- STEP 1: edit cart ---------- */
           <>
             <div className="stack" style={{ gap: 12 }}>
               {lines.map((l) => (
@@ -161,27 +167,75 @@ export function MenuBrowser({
               <span>{formatKwd(total)}</span>
             </div>
 
+            <div className="grid-2">
+              <div className="field">
+                <label htmlFor="deliveryOffice">Office</label>
+                <input id="deliveryOffice" value={office} onChange={(e) => setOffice(e.target.value)} placeholder="Office #" />
+              </div>
+              <div className="field">
+                <label htmlFor="deliveryFloor">Floor</label>
+                <input id="deliveryFloor" value={floor} onChange={(e) => setFloor(e.target.value)} placeholder="Floor" />
+              </div>
+            </div>
+            <div className="field">
+              <label htmlFor="customerNote">Note for the cafeteria</label>
+              <textarea id="customerNote" value={customerNote} onChange={(e) => setCustomerNote(e.target.value)} rows={2} />
+            </div>
+
+            <button className="btn btn-primary btn-block" onClick={() => setReviewing(true)}>
+              Review order
+            </button>
+          </>
+        ) : (
+          /* ---------- STEP 2: final review + submit ---------- */
+          <>
+            <div className="alert alert-info small" style={{ marginBottom: 12 }}>
+              Final review — check everything below, then submit your order.
+            </div>
+
+            <div className="stack" style={{ gap: 8 }}>
+              {lines.map((l) => (
+                <div key={l.item.id} style={{ borderBottom: '1px solid var(--line)', paddingBottom: 8 }}>
+                  <div className="row-between">
+                    <span className="small"><strong>{l.quantity}×</strong> {l.item.name}</span>
+                    <span className="small">{formatKwd(l.item.priceFils * l.quantity)}</span>
+                  </div>
+                  {l.note && <div className="muted small" style={{ marginTop: 2 }}>↳ {l.note}</div>}
+                </div>
+              ))}
+            </div>
+
+            <div className="stack small" style={{ gap: 4, margin: '12px 0' }}>
+              <div className="row-between"><span className="muted">Deliver to office</span><strong>{office || '—'}</strong></div>
+              <div className="row-between"><span className="muted">Floor</span><strong>{floor || '—'}</strong></div>
+              {customerNote.trim() && (
+                <div className="row-between"><span className="muted">Note</span><strong style={{ textAlign: 'right' }}>{customerNote.trim()}</strong></div>
+              )}
+            </div>
+
+            <div className="row-between" style={{ fontWeight: 700, margin: '8px 0 14px' }}>
+              <span>Estimated total</span>
+              <span>{formatKwd(total)}</span>
+            </div>
+
             {state?.error && <div className="alert alert-error">{state.error}</div>}
 
             <form action={formAction}>
+              <ProcessingOverlay label="Submitting your order…" />
               <input type="hidden" name="cart" value={cartPayload} />
-              <div className="grid-2">
-                <div className="field">
-                  <label htmlFor="deliveryOffice">Office</label>
-                  <input id="deliveryOffice" name="deliveryOffice" defaultValue={defaultOffice} placeholder="Office #" />
-                </div>
-                <div className="field">
-                  <label htmlFor="deliveryFloor">Floor</label>
-                  <input id="deliveryFloor" name="deliveryFloor" defaultValue={defaultFloor} placeholder="Floor" />
-                </div>
-              </div>
-              <div className="field">
-                <label htmlFor="customerNote">Note for the cafeteria</label>
-                <textarea id="customerNote" name="customerNote" rows={2} />
-              </div>
-              <SubmitButton className="btn btn-primary btn-block" pendingText="Placing order…">
-                Place order
+              <input type="hidden" name="deliveryOffice" value={office} />
+              <input type="hidden" name="deliveryFloor" value={floor} />
+              <input type="hidden" name="customerNote" value={customerNote} />
+              <SubmitButton className="btn btn-primary btn-block" pendingText="Submitting…">
+                Submit order
               </SubmitButton>
+              <button
+                type="button"
+                className="btn btn-ghost btn-block mt-2"
+                onClick={() => setReviewing(false)}
+              >
+                Back to edit
+              </button>
             </form>
           </>
         )}

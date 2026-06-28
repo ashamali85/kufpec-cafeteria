@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import { updateProfileAction, changePasswordAction } from '@/lib/actions';
 import { SubmitButton } from '@/components/SubmitButton';
+import { ProcessingOverlay } from '@/components/ProcessingOverlay';
 
 type Profile = {
   name: string;
@@ -23,6 +24,7 @@ export function ProfileForms({ profile }: { profile: Profile }) {
         {pState?.error && <div className="alert alert-error">{pState.error}</div>}
         {pState?.ok && <div className="alert alert-ok">{pState.ok}</div>}
         <form action={pAction}>
+          <ProcessingOverlay label="Saving profile…" />
           <div className="field">
             <label htmlFor="name">Full name</label>
             <input id="name" name="name" defaultValue={profile.name} required />
@@ -54,6 +56,7 @@ export function ProfileForms({ profile }: { profile: Profile }) {
         {pwState?.error && <div className="alert alert-error">{pwState.error}</div>}
         {pwState?.ok && <div className="alert alert-ok">{pwState.ok}</div>}
         <form action={pwAction}>
+          <ProcessingOverlay label="Updating password…" />
           <div className="field">
             <label htmlFor="currentPassword">Current password</label>
             <input id="currentPassword" name="currentPassword" type="password" required />

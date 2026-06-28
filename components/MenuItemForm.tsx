@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import { saveMenuItemAction } from '@/lib/actions';
 import { SubmitButton } from '@/components/SubmitButton';
+import { ProcessingOverlay } from '@/components/ProcessingOverlay';
 import { ImageUploadField } from '@/components/ImageUploadField';
 
 type Item = {
@@ -29,6 +30,7 @@ export function MenuItemForm({
     <div className="card">
       {state?.error && <div className="alert alert-error">{state.error}</div>}
       <form action={formAction}>
+          <ProcessingOverlay label="Saving item…" />
         {item && <input type="hidden" name="id" value={item.id} />}
         <div className="field">
           <label htmlFor="name">Name</label>

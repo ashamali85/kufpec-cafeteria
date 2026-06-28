@@ -4,6 +4,7 @@ import { useActionState, useMemo, useState } from 'react';
 import { topUpAction } from '@/lib/actions';
 import { formatKwd } from '@/lib/money';
 import { SubmitButton } from '@/components/SubmitButton';
+import { ProcessingOverlay } from '@/components/ProcessingOverlay';
 
 type Employee = { id: string; name: string; email: string; balanceFils: number };
 
@@ -56,6 +57,7 @@ export function TopUpForm({ employees }: { employees: Employee[] }) {
 
       {selected && (
         <form action={formAction}>
+          <ProcessingOverlay label="Adding credit…" />
           <input type="hidden" name="employeeId" value={selected.id} />
           <div className="alert alert-ok">
             {selected.name} — current balance {formatKwd(selected.balanceFils)}

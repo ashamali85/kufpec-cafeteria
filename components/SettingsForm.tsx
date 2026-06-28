@@ -3,6 +3,7 @@
 import { useActionState } from 'react';
 import { saveSettingsAction } from '@/lib/actions';
 import { SubmitButton } from '@/components/SubmitButton';
+import { ProcessingOverlay } from '@/components/ProcessingOverlay';
 
 export function SettingsForm({
   negativeLimitKwd,
@@ -20,6 +21,7 @@ export function SettingsForm({
       {state?.error && <div className="alert alert-error">{state.error}</div>}
       {state?.ok && <div className="alert alert-ok">{state.ok}</div>}
       <form action={formAction}>
+          <ProcessingOverlay label="Saving settings…" />
         <div className="field">
           <label htmlFor="cafeteriaName">Cafeteria name</label>
           <input id="cafeteriaName" name="cafeteriaName" defaultValue={cafeteriaName} />
